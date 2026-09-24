@@ -34,7 +34,18 @@
         </el-radio-group>
       </el-form-item>
 
-      <!-- 4. 选择水军（发评论 + 混合操作） -->
+      <!-- 4. 任务开始前操作（混合操作 / 上链接） -->
+      <el-form-item v-if="form.taskMode === 'mixed' || form.taskMode === 'link'" label="任务开始前操作">
+        <OperationStepList
+          :steps="form.preOperationSteps"
+          :capturing="isCapturing"
+          @capture="captureStep('pre', -1)"
+          @recapture="(i) => captureStep('pre', i)"
+          @remove="(i) => form.preOperationSteps.splice(i, 1)"
+        />
+      </el-form-item>
+
+      <!-- 5. 选择水军（发评论 + 混合操作） -->
       <el-form-item v-if="form.taskMode === 'comment' || form.taskMode === 'mixed'" label="选择水军">
         <div v-if="botStore.bots.length === 0" class="empty-hint">
           暂无可用水军，请先去
@@ -100,7 +111,7 @@
           </div>
         </el-form-item>
 
-        <el-form-item label="修改链接号为" :required="!form.linkNumber.trim()">
+        <el-form-item label="改链接号为" :required="!form.linkNumber.trim()">
           <div class="link-row">
             <el-input v-model="form.linkNumber" placeholder="1" style="width: 120px" />
             <span class="delay-label">延迟</span>
@@ -109,17 +120,6 @@
           </div>
         </el-form-item>
       </template>
-
-      <!-- 混合操作 / 上链接：任务开始前操作 -->
-      <el-form-item v-if="form.taskMode === 'mixed' || form.taskMode === 'link'" label="任务开始前操作">
-        <OperationStepList
-          :steps="form.preOperationSteps"
-          :capturing="isCapturing"
-          @capture="captureStep('pre', -1)"
-          @recapture="(i) => captureStep('pre', i)"
-          @remove="(i) => form.preOperationSteps.splice(i, 1)"
-        />
-      </el-form-item>
 
       <!-- 6. 评论模块（发评论 + 混合操作） -->
       <el-form-item v-if="form.taskMode === 'comment' || form.taskMode === 'mixed'" label="评论">
@@ -514,7 +514,7 @@ const validationErrors = computed(() => {
     if (!form.value.linkSearchPos) errs.push('搜索框坐标')
     if (!form.value.linkExplainPos) errs.push('讲解位置坐标')
     if (!form.value.linkNumberPos) errs.push('链接号坐标')
-    if (!form.value.linkNumber.trim()) errs.push('修改链接号为')
+    if (!form.value.linkNumber.trim()) errs.push('改链接号为')
   }
   return errs
 })

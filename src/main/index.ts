@@ -721,6 +721,7 @@ function setupIPC() {
       captureWindow?.close()
       captureWindow = null
       mainWindow?.webContents.send('capture:result', { x: pos.x, y: pos.y })
+      showCaptureSuccessToast()
     }
 
     function cancelCapture() {
@@ -1016,6 +1017,90 @@ function setupIPC() {
 
   // 注入通知函数，供任务自动结束等主进程回调使用
   showTaskNotifyFn = showTaskNotify
+
+  // ===== 坐标获取成功提示（屏幕顶部居中，全局可见） =====
+  let captureToastWin: BrowserWindow | null = null
+  let captureToastTimer: ReturnType<typeof setTimeout> | null = null
+
+  function showCaptureSuccessToast() {
+    const { screen: electronScreen } = require('electron')
+    // 跟随鼠标所在显示器，保证多屏环境下弹窗出现在用户当前操作的屏幕上
+    const cursor = electronScreen.getCursorScreenPoint()
+    const display = electronScreen.getDisplayNearestPoint(cursor)
+    const { x: areaX, y: areaY, width: areaW } = display.bounds
+    const w = 180
+    const h = 48
+    const x = Math.round(areaX + (areaW - w) / 2)
+    const y = Math.round(areaY + 16)
+
+    if (captureToastWin && !captureToastWin.isDestroyed()) {
+      try { captureToastWin.close() } catch {}
+    }
+    captureToastWin = null
+    if (captureToastTimer) { clearTimeout(captureToastTimer); captureToastTimer = null }
+
+    const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><style>
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      html, body { width: 100%; height: 100%; background: transparent; overflow: hidden; }
+      .container { background: #f0f9eb; border: 1px solid #67c23a; border-radius: 12px;
+        display: flex; align-items: center; justify-content: center;
+        width: calc(100% - 4px); height: calc(100% - 4px); margin: 2px;
+        font-family: 'Microsoft YaHei', sans-serif; overflow: hidden; }
+      .msg { color: #67c23a; font-size: 16px; font-weight: 600; }
+    </style></head><body><div class="container"><div class="msg">获取成功</div></div></body></html>`
+
+    const win = new BrowserWindow({
+      width: w, height: h, x, y,
+      show: false,
+      frame: false, transparent: true, alwaysOnTop: true,
+      skipTaskbar: true, resizable: false, focusable: false,
+      hasShadow: false,
+      backgroundColor: '#00000000',
+      webPreferences: { contextIsolation: true, nodeIntegration: false },
+    })
+    captureToastWin = win
+    win.loadURL('data:text/html;charset=utf-8,' + encodeURIComponent(html))
+
+    let revealed = false
+    const reveal = () => {
+      if (revealed || win.isDestroyed()) return
+      revealed = true
+      try {
+        win.setBounds({ x, y, width: w, height: h })
+        win.setAlwaysOnTop(true, 'screen-saver')
+        win.setOpacity(0)
+        win.showInactive()
+      } catch {}
+
+      let opacity = 0
+      const fadeIn = setInterval(() => {
+        opacity = Math.min(opacity + 0.15, 1)
+        try { win.setOpacity(opacity) } catch {}
+        if (opacity >= 1) clearInterval(fadeIn)
+      }, 30)
+
+      captureToastTimer = setTimeout(() => {
+        let o = 1
+        const fadeOut = setInterval(() => {
+          o = Math.max(o - 0.15, 0)
+          try { win.setOpacity(o) } catch {}
+          if (o <= 0) {
+            clearInterval(fadeOut)
+            clearInterval(fadeIn)
+            try { win.close() } catch {}
+          }
+        }, 30)
+      }, 1000)
+    }
+
+    win.once('ready-to-show', reveal)
+    // 兜底：个别环境下 ready-to-show 不触发，超时后直接显示
+    setTimeout(reveal, 400)
+
+    win.on('closed', () => {
+      if (captureToastWin === win) captureToastWin = null
+    })
+  }
 
   ipcMain.handle('task:notify', (_e, message: string, type: string) => {
     showTaskNotify(message, type as 'success' | 'warning' | 'error')

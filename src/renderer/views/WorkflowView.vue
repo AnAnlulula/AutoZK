@@ -91,10 +91,10 @@
       </div>
       <div class="group-bar-actions">
         <el-button size="small" @click="createGroup">
-          <el-icon><Plus /></el-icon>新建分组
+          <el-icon><Plus /></el-icon>新建
         </el-button>
         <el-button size="small" @click="showManageGroup = true">
-          <el-icon><Setting /></el-icon>管理分组
+          <el-icon><Setting /></el-icon>管理
         </el-button>
       </div>
     </div>
@@ -105,10 +105,10 @@
         <span class="inter-group-title">互动分组</span>
         <div class="inter-group-actions">
           <el-button size="small" @click="createInterGroup">
-            <el-icon><Plus /></el-icon>新建互动分组
+            <el-icon><Plus /></el-icon>新建
           </el-button>
           <el-button size="small" @click="showManageInterGroup = true">
-            <el-icon><Setting /></el-icon>管理互动分组
+            <el-icon><Setting /></el-icon>管理
           </el-button>
         </div>
       </div>
@@ -176,7 +176,7 @@
                 <el-tag size="small">{{ card.linkProductId || '未填写' }}</el-tag>
               </div>
               <div class="info-row">
-                <span class="info-label">修改链接号为</span>
+                <span class="info-label">改链接号为</span>
                 <el-tag size="small" type="info">{{ card.linkNumber || '1' }}</el-tag>
               </div>
               <div class="info-row">
@@ -1039,7 +1039,7 @@ async function confirmCopyTask() {
   align-items: center;
   padding: 3px 12px;
   border: 1.5px solid var(--gcolor, #909399);
-  border-radius: 15%;
+  border-radius: 5px;
   background: var(--el-bg-color);
   color: var(--el-text-color-regular);
   cursor: pointer;
@@ -1051,7 +1051,7 @@ async function confirmCopyTask() {
 .group-chip.active {
   background: color-mix(in srgb, var(--gcolor, #409eff) 15%, white);
   font-weight: 600;
-  box-shadow: 0 0 0 1.5px var(--gcolor, #409eff);
+  box-shadow: 0 0 0 1px var(--gcolor, #409eff);
 }
 .group-chip.enabled .group-star {
   display: inline-flex;
@@ -1085,9 +1085,9 @@ async function confirmCopyTask() {
 }
 .manage-group-item.active { background: var(--el-fill-color-light); }
 .manage-group-tag {
-  padding: 2px 12px;
+  padding: 3px 12px;
   border: 1.5px solid var(--gcolor, #909399);
-  border-radius: 14px;
+  border-radius: 5px;
   font-size: 13px;
   color: var(--el-text-color-regular);
 }
@@ -1236,8 +1236,8 @@ async function confirmCopyTask() {
   border-radius: 8px;
   transition: box-shadow 0.2s;
 }
-.card-wrapper.selected {
-  box-shadow: 0 0 0 2px var(--el-color-primary);
+.card-wrapper.selected :deep(.el-card) {
+  box-shadow:  0 0 0 2px var(--el-color-primary);
 }
 .card-title {
   font-weight: 600;
@@ -1359,15 +1359,15 @@ async function confirmCopyTask() {
 .inter-group-chip {
   display: inline-flex;
   align-items: center;
-  padding: 2px 10px;
-  border: 1px solid var(--el-border-color);
-  border-radius: 12px;
+  padding: 3px 12px;
+  border: 1.5px solid var(--el-border-color);
+  border-radius: 20px;
   background: var(--el-fill-color-blank);
   color: var(--el-text-color-regular);
   cursor: pointer;
   transition: all 0.15s;
   user-select: none;
-  font-size: 12px;
+  font-size: 13px;
 }
 .inter-group-chip:hover {
   border-color: var(--el-color-primary);
@@ -1396,9 +1396,9 @@ async function confirmCopyTask() {
 
 /* 管理互动分组标签样式 */
 .manage-inter-tag {
-  padding: 2px 12px;
-  border: 1px solid var(--el-border-color);
-  border-radius: 12px;
+  padding: 3px 12px;
+  border: 1.5px solid var(--el-border-color);
+  border-radius: 20px;
   font-size: 13px;
   color: var(--el-text-color-regular);
   background: var(--el-fill-color-blank);
@@ -1463,11 +1463,12 @@ async function confirmCopyTask() {
   font-weight: 600;
 }
 .copy-item-tag {
-  padding: 2px 10px;
+  padding: 3px 12px;
   border: 1.5px solid var(--gcolor, #909399);
-  border-radius: 12px;
-  font-size: 12px;
+  border-radius: 5px;
+  font-size: 13px;
   color: var(--el-text-color-regular);
+  flex-shrink: 0;
 }
 .copy-empty {
   flex: 1;
