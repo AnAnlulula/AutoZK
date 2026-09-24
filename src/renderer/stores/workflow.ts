@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import type { BotCard, BotInstance, TaskStatus, TaskStep, SendMode, TaskMode, OperationStep, OperationMode } from '../../shared/types'
+import type { BotCard, BotInstance, TaskStatus, TaskStep, SendMode, TaskMode, OperationStep, OperationMode, LinkDelays, ScreenPoint } from '../../shared/types'
 
 export const useWorkflowStore = defineStore('workflow', () => {
   const cards = ref<BotCard[]>([])
@@ -42,6 +42,12 @@ export const useWorkflowStore = defineStore('workflow', () => {
     operationSteps: OperationStep[]
     preOperationSteps: OperationStep[]
     postOperationSteps: OperationStep[]
+    linkProductId?: string
+    linkSearchPos?: ScreenPoint | null
+    linkExplainPos?: ScreenPoint | null
+    linkNumberPos?: ScreenPoint | null
+    linkNumber?: string
+    linkDelays?: LinkDelays
     linkageEnabled: boolean
     linkageDelay: number
     linkedTasks: { taskId: string; taskName: string; delay: number }[]
@@ -69,6 +75,12 @@ export const useWorkflowStore = defineStore('workflow', () => {
       operationSteps: data.operationSteps,
  preOperationSteps: data.preOperationSteps,
  postOperationSteps: data.postOperationSteps,
+ linkProductId: data.linkProductId,
+ linkSearchPos: data.linkSearchPos,
+ linkExplainPos: data.linkExplainPos,
+ linkNumberPos: data.linkNumberPos,
+ linkNumber: data.linkNumber,
+ linkDelays: data.linkDelays,
  isDraft: data.isDraft,
   linkageEnabled: data.linkageEnabled,
   linkageDelay: data.linkageDelay,

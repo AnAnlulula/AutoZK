@@ -49,6 +49,8 @@ export class TaskExecutor {
       await this.runMouseMode(taskId, task, robot)
     } else if (taskMode === 'mixed') {
       await this.runMixedMode(taskId, task, robot)
+    } else if (taskMode === 'link') {
+      await this.runLinkMode(taskId, task, robot)
     } else {
       await this.runCommentMode(taskId, task, robot)
     }
@@ -190,6 +192,72 @@ export class TaskExecutor {
     if (postSteps.length > 0) {
       await this.execSteps(taskId, postSteps, task.operationInterval || 1000, robot)
     }
+  }
+
+  // 上链接：点搜索框 → 全选粘贴商品ID → 回车搜索 → 点讲解位置 → 点链接号 → 全选输入链接号 → 回车
+  private async runLinkMode(taskId: string, task: any, robot: any) {
+    const productId = (task.linkProductId || '').trim()
+    const searchPos = task.linkSearchPos
+    const explainPos = task.linkExplainPos
+    const numberPos = task.linkNumberPos
+    const linkNumber = String(task.linkNumber ?? '').trim() || '1'
+
+    if (!productId || !searchPos || !explainPos || !numberPos) {
+      return
+    }
+
+    const delays = task.linkDelays || {}
+    const dProductId = delays.productId ?? 200
+    const dSearch = delays.search ?? 500
+    const dExplain = delays.explain ?? 300
+    const dNumberPos = delays.numberPos ?? 300
+    const dNumberValue = delays.numberValue ?? 500
+
+    await this.sleep(500)
+
+    // 1. 商品ID 写入剪贴板
+    clipboard.writeText(productId)
+    await this.sleep(dProductId)
+    if (!this.runningTasks.get(taskId)) return
+
+    // 2. 点击搜索框
+    robot.moveMouse(searchPos.x, searchPos.y)
+    await this.sleep(100)
+    robot.mouseClick('left')
+    await this.sleep(300)
+
+    // 3. 全选 → 粘贴商品ID → 回车搜索
+    robot.keyTap('a', 'control')
+    await this.sleep(100)
+    robot.keyTap('v', 'control')
+    await this.sleep(100)
+    robot.keyTap('enter')
+    await this.sleep(dSearch)
+    if (!this.runningTasks.get(taskId)) return
+
+    // 4. 点击讲解位置
+    robot.moveMouse(explainPos.x, explainPos.y)
+    await this.sleep(100)
+    robot.mouseClick('left')
+    await this.sleep(dExplain)
+    if (!this.runningTasks.get(taskId)) return
+
+    // 5. 点击链接号
+    robot.moveMouse(numberPos.x, numberPos.y)
+    await this.sleep(100)
+    robot.mouseClick('left')
+    await this.sleep(dNumberPos)
+    if (!this.runningTasks.get(taskId)) return
+
+    // 6. 全选 → 输入链接号 → 回车
+    clipboard.writeText(linkNumber)
+    await this.sleep(100)
+    robot.keyTap('a', 'control')
+    await this.sleep(100)
+    robot.keyTap('v', 'control')
+    await this.sleep(100)
+    robot.keyTap('enter')
+    await this.sleep(dNumberValue)
   }
 
   private async execSteps(taskId: string, steps: any[], defaultInterval: number, robot: any) {

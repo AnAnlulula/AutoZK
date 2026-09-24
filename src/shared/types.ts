@@ -46,6 +46,30 @@ export enum TaskMode {
   COMMENT = 'comment',        // 发评论
   MOUSE = 'mouse',            // 操作鼠标
   MIXED = 'mixed',            // 混合操作
+  LINK = 'link',              // 上链接
+}
+
+// ===== 屏幕坐标 =====
+export interface ScreenPoint {
+  x: number
+  y: number
+}
+
+// ===== 上链接模式：各步骤延迟(ms) =====
+export interface LinkDelays {
+  productId: number      // 写入商品ID剪贴板后
+  search: number         // 点击搜索框并回车搜索后
+  explain: number        // 点击讲解位置后
+  numberPos: number      // 点击链接号后
+  numberValue: number    // 输入链接号并回车后
+}
+
+export const DEFAULT_LINK_DELAYS: LinkDelays = {
+  productId: 200,
+  search: 500,
+  explain: 300,
+  numberPos: 300,
+  numberValue: 500,
 }
 
 // ===== 操作模式（鼠标模式） =====
@@ -109,7 +133,13 @@ export interface BotCard {
   commentItems: { key: string; content: string; source: 'manual' | 'table'; mustSend: boolean; delay: number }[]
   operationSteps: OperationStep[]  // 操作步骤列表（鼠标模式）
   preOperationSteps: OperationStep[]   // 评论前操作（混合模式）
-  postOperationSteps: OperationStep[]   // 评论后操作（混合模式）
+  postOperationSteps: OperationStep[]  // 评论后操作（混合模式）
+  linkProductId?: string          // 上链接：商品ID
+  linkSearchPos?: ScreenPoint | null    // 上链接：搜索框坐标
+  linkExplainPos?: ScreenPoint | null   // 上链接：讲解位置坐标
+  linkNumberPos?: ScreenPoint | null    // 上链接：链接号坐标
+  linkNumber?: string             // 上链接：修改链接号为（默认 1）
+  linkDelays?: LinkDelays         // 上链接：各步骤延迟
   isDraft?: boolean           // 是否为草稿
   groupId?: string            // 所属分组（默认分组为 group-default）
   interGroupId?: string       // 所属互动分组（互动分组有外层分组归属）

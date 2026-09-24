@@ -30,11 +30,12 @@
           <el-radio value="comment">发评论</el-radio>
           <el-radio value="mouse">操作鼠标</el-radio>
           <el-radio value="mixed">混合操作</el-radio>
+          <el-radio value="link">上链接</el-radio>
         </el-radio-group>
       </el-form-item>
 
       <!-- 4. 选择水军（发评论 + 混合操作） -->
-      <el-form-item v-if="form.taskMode !== 'mouse'" label="选择水军">
+      <el-form-item v-if="form.taskMode === 'comment' || form.taskMode === 'mixed'" label="选择水军">
         <div v-if="botStore.bots.length === 0" class="empty-hint">
           暂无可用水军，请先去
           <el-button text type="primary" size="small" @click="goToBotPage">水军设置</el-button>
@@ -64,6 +65,53 @@
         />
       </el-form-item>
 
+      <!-- 5B. 上链接模块 -->
+      <template v-if="form.taskMode === 'link'">
+        <el-form-item label="商品ID" :required="!form.linkProductId.trim()">
+          <div class="link-row">
+            <el-input v-model="form.linkProductId" placeholder="输入要搜索的商品ID" style="width: 240px" />
+            <span class="delay-label">延迟</span>
+            <el-input-number v-model="form.linkDelays.productId" :min="0" :max="60000" :step="100" size="small" class="delay-input" />
+            <span class="delay-unit">ms</span>
+          </div>
+        </el-form-item>
+
+        <el-form-item
+          v-for="f in linkCoordFields"
+          :key="f.key"
+          :label="f.label"
+          :required="!getLinkPos(f.key)"
+        >
+          <div class="link-row">
+            <template v-if="getLinkPos(f.key)">
+              <el-input :model-value="getLinkPos(f.key)!.x" readonly size="small" class="coord-input" />
+              <el-input :model-value="getLinkPos(f.key)!.y" readonly size="small" class="coord-input" />
+              <el-button size="small" :disabled="isCapturing" @click="captureLinkPos(f.key)">
+                {{ isCapturing ? '捕获中...' : '重新捕获' }}
+              </el-button>
+            </template>
+            <template v-else>
+              <span class="coord-empty">未捕获</span>
+              <el-button size="small" :disabled="isCapturing" @click="captureLinkPos(f.key)">
+                {{ isCapturing ? '捕获中...' : '捕获坐标' }}
+              </el-button>
+            </template>
+            <span class="delay-label">延迟</span>
+            <el-input-number v-model="form.linkDelays[f.key]" :min="0" :max="60000" :step="100" size="small" class="delay-input" />
+            <span class="delay-unit">ms</span>
+          </div>
+        </el-form-item>
+
+        <el-form-item label="修改链接号为" :required="!form.linkNumber.trim()">
+          <div class="link-row">
+            <el-input v-model="form.linkNumber" placeholder="1" style="width: 120px" />
+            <span class="delay-label">延迟</span>
+            <el-input-number v-model="form.linkDelays.numberValue" :min="0" :max="60000" :step="100" size="small" class="delay-input" />
+            <span class="delay-unit">ms</span>
+          </div>
+        </el-form-item>
+      </template>
+
       <!-- 混合操作：评论前操作 -->
       <el-form-item v-if="form.taskMode === 'mixed'" label="评论前操作">
         <OperationStepList
@@ -76,7 +124,7 @@
       </el-form-item>
 
       <!-- 6. 评论模块（发评论 + 混合操作） -->
-      <el-form-item v-if="form.taskMode !== 'mouse'" label="评论">
+      <el-form-item v-if="form.taskMode === 'comment' || form.taskMode === 'mixed'" label="评论">
         <div class="comment-section">
           <div class="comment-input-row">
             <el-input
@@ -142,8 +190,8 @@
         />
       </el-form-item>
 
-      <!-- 7A. 发送规则（发评论 + 混合操作） -->
-      <el-form-item v-if="form.taskMode !== 'mouse'" label="发送规则">
+      <!-- 7A. 任务规则（发评论 + 混合操作） -->
+      <el-form-item v-if="form.taskMode === 'comment' || form.taskMode === 'mixed'" label="任务规则">
         <div class="send-rules">
           <div class="rule-row">
             <span class="rule-label">发送顺序</span>
@@ -172,7 +220,7 @@
       </el-form-item>
 
       <!-- 7B. 操作规则（操作鼠标模式） -->
-      <el-form-item v-else label="操作规则">
+      <el-form-item v-if="form.taskMode === 'mouse'" label="操作规则">
         <div class="send-rules">
           <div class="rule-row">
             <el-radio-group v-model="form.operationMode">
@@ -180,6 +228,18 @@
               <el-radio value="loop">循环</el-radio>
             </el-radio-group>
             <span class="rule-hint">{{ form.operationMode === 'once' ? '按操作列表顺序依次点击坐标后结束' : '按操作列表顺序循环点击，再次按快捷键结束' }}</span>
+          </div>
+        </div>
+      </el-form-item>
+
+      <!-- 7C. 任务规则（上链接模式） -->
+      <el-form-item v-if="form.taskMode === 'link'" label="任务规则">
+        <div class="send-rules">
+          <div class="rule-row">
+            <span class="rule-label">批量设置延迟</span>
+            <el-input-number v-model="batchLinkDelay" :min="0" :max="60000" :step="100" style="width: 130px" />
+            <el-button size="small" @click="applyBatchLinkDelay">应用</el-button>
+            <span class="rule-hint">毫秒（一次性应用到上方所有步骤）</span>
           </div>
         </div>
       </el-form-item>
@@ -314,7 +374,8 @@ import { useWorkflowStore } from '../stores/workflow'
 import { useGroupStore } from '../stores/groups'
 import ShortcutRecorder from './ShortcutRecorder.vue'
 import OperationStepList from './OperationStepList.vue'
-import type { SendMode, BotInstance, TaskMode, OperationStep, OperationMode } from '../../shared/types'
+import { DEFAULT_LINK_DELAYS } from '../../shared/types'
+import type { SendMode, BotInstance, TaskMode, OperationStep, OperationMode, LinkDelays, ScreenPoint } from '../../shared/types'
 
 type StepTarget = 'main' | 'pre' | 'post'
 
@@ -336,6 +397,12 @@ const emit = defineEmits<{
  operationSteps: OperationStep[]
  preOperationSteps: OperationStep[]
  postOperationSteps: OperationStep[]
+ linkProductId?: string
+ linkSearchPos?: ScreenPoint | null
+ linkExplainPos?: ScreenPoint | null
+ linkNumberPos?: ScreenPoint | null
+ linkNumber?: string
+ linkDelays?: LinkDelays
  isDraft?: boolean
  linkageEnabled: boolean
  linkageDelay: number
@@ -365,6 +432,12 @@ watch(() => props.visible, (val) => {
       operationSteps: props.editData.operationSteps ? JSON.parse(JSON.stringify(props.editData.operationSteps)) : [],
       preOperationSteps: props.editData.preOperationSteps ? JSON.parse(JSON.stringify(props.editData.preOperationSteps)) : [],
       postOperationSteps: props.editData.postOperationSteps ? JSON.parse(JSON.stringify(props.editData.postOperationSteps)) : [],
+      linkProductId: props.editData.linkProductId || '',
+      linkSearchPos: props.editData.linkSearchPos ? { ...props.editData.linkSearchPos } : null,
+      linkExplainPos: props.editData.linkExplainPos ? { ...props.editData.linkExplainPos } : null,
+      linkNumberPos: props.editData.linkNumberPos ? { ...props.editData.linkNumberPos } : null,
+      linkNumber: props.editData.linkNumber ?? '1',
+      linkDelays: { ...DEFAULT_LINK_DELAYS, ...(props.editData.linkDelays || {}) },
       sendMode: props.editData.sendMode || 'sequential',
       commentCount: props.editData.commentCount ?? 0,
       commentInterval: props.editData.commentInterval ?? 500,
@@ -400,6 +473,12 @@ const form = ref({
   operationSteps: [] as OperationStep[],
   preOperationSteps: [] as OperationStep[],
   postOperationSteps: [] as OperationStep[],
+  linkProductId: '',
+  linkSearchPos: null as ScreenPoint | null,
+  linkExplainPos: null as ScreenPoint | null,
+  linkNumberPos: null as ScreenPoint | null,
+  linkNumber: '1',
+  linkDelays: { ...DEFAULT_LINK_DELAYS } as LinkDelays,
   sendMode: 'sequential' as SendMode,
   commentCount: 0,
   commentInterval: 500,
@@ -417,16 +496,20 @@ const validationErrors = computed(() => {
   const errs: string[] = []
   if (!form.value.name.trim()) errs.push('任务名称')
   if (!form.value.hotkey) errs.push('快捷键')
-  if (form.value.taskMode !== 'mouse') {
+  const mode = form.value.taskMode
+  if (mode === 'comment' || mode === 'mixed') {
     if (form.value.botIds.length === 0) errs.push('选择水军')
     if (form.value.commentItems.length === 0) errs.push('评论')
   }
-  if (form.value.taskMode === 'mouse') {
+  if (mode === 'mouse') {
     if (form.value.operationSteps.length === 0) errs.push('操作步骤')
   }
-  if (form.value.taskMode === 'mixed') {
-    if (form.value.botIds.length === 0) errs.push('选择水军')
-    if (form.value.commentItems.length === 0) errs.push('评论')
+  if (mode === 'link') {
+    if (!form.value.linkProductId.trim()) errs.push('商品ID')
+    if (!form.value.linkSearchPos) errs.push('搜索框坐标')
+    if (!form.value.linkExplainPos) errs.push('讲解位置坐标')
+    if (!form.value.linkNumberPos) errs.push('链接号坐标')
+    if (!form.value.linkNumber.trim()) errs.push('修改链接号为')
   }
   return errs
 })
@@ -579,6 +662,41 @@ function onDrop(idx: number) {
   dropIndex.value = -1
 }
 
+// ===== 上链接坐标捕获 =====
+type LinkCoordKey = 'search' | 'explain' | 'numberPos'
+const linkCaptureKey = ref<LinkCoordKey | ''>('')
+
+const linkCoordFields: { key: LinkCoordKey; label: string }[] = [
+  { key: 'search', label: '搜索框坐标' },
+  { key: 'explain', label: '讲解位置坐标' },
+  { key: 'numberPos', label: '链接号坐标' },
+]
+
+function getLinkPos(key: LinkCoordKey): ScreenPoint | null {
+  if (key === 'search') return form.value.linkSearchPos
+  if (key === 'explain') return form.value.linkExplainPos
+  return form.value.linkNumberPos
+}
+
+function captureLinkPos(key: LinkCoordKey) {
+  if (isCapturing.value) return
+  linkCaptureKey.value = key
+  const fontSize = parseInt(document.documentElement.style.fontSize) || 14
+  isCapturing.value = true
+  window.electronAPI.openCaptureOverlay(fontSize)
+}
+
+const batchLinkDelay = ref(0)
+
+function applyBatchLinkDelay() {
+  const d = form.value.linkDelays
+  d.productId = batchLinkDelay.value
+  d.search = batchLinkDelay.value
+  d.explain = batchLinkDelay.value
+  d.numberPos = batchLinkDelay.value
+  d.numberValue = batchLinkDelay.value
+}
+
 // ===== 操作步骤捕获 =====
 function captureStep(target: StepTarget, idx: number) {
   if (isCapturing.value) return
@@ -591,6 +709,16 @@ function captureStep(target: StepTarget, idx: number) {
 
 function handleCaptureResult(result: { x: number; y: number } | null) {
   isCapturing.value = false
+  if (linkCaptureKey.value) {
+    const key = linkCaptureKey.value
+    linkCaptureKey.value = ''
+    if (!result) return
+    const point = { x: result.x, y: result.y }
+    if (key === 'search') form.value.linkSearchPos = point
+    else if (key === 'explain') form.value.linkExplainPos = point
+    else form.value.linkNumberPos = point
+    return
+  }
   if (!result) {
     capturingStepIndex.value = -1
     return
@@ -632,6 +760,7 @@ const linkagePickerSelection = ref<string[]>([])
 function modeLabel(mode: string): string {
   if (mode === 'mouse') return '操作鼠标'
   if (mode === 'mixed') return '混合操作'
+  if (mode === 'link') return '上链接'
   return '发评论'
 }
 
@@ -715,6 +844,12 @@ function confirm() {
  operationSteps: JSON.parse(JSON.stringify(form.value.operationSteps)),
  preOperationSteps: JSON.parse(JSON.stringify(form.value.preOperationSteps)),
  postOperationSteps: JSON.parse(JSON.stringify(form.value.postOperationSteps)),
+ linkProductId: form.value.linkProductId.trim(),
+ linkSearchPos: form.value.linkSearchPos ? { ...form.value.linkSearchPos } : null,
+ linkExplainPos: form.value.linkExplainPos ? { ...form.value.linkExplainPos } : null,
+ linkNumberPos: form.value.linkNumberPos ? { ...form.value.linkNumberPos } : null,
+ linkNumber: form.value.linkNumber.trim() || '1',
+ linkDelays: { ...form.value.linkDelays },
  isDraft: false,
  linkageEnabled: form.value.linkageEnabled,
 	 linkageDelay: form.value.linkageDelay,
@@ -742,6 +877,12 @@ function saveDraft() {
  operationSteps: JSON.parse(JSON.stringify(form.value.operationSteps)),
  preOperationSteps: JSON.parse(JSON.stringify(form.value.preOperationSteps)),
  postOperationSteps: JSON.parse(JSON.stringify(form.value.postOperationSteps)),
+ linkProductId: form.value.linkProductId.trim(),
+ linkSearchPos: form.value.linkSearchPos ? { ...form.value.linkSearchPos } : null,
+ linkExplainPos: form.value.linkExplainPos ? { ...form.value.linkExplainPos } : null,
+ linkNumberPos: form.value.linkNumberPos ? { ...form.value.linkNumberPos } : null,
+ linkNumber: form.value.linkNumber.trim() || '1',
+ linkDelays: { ...form.value.linkDelays },
  isDraft: true,
 	 linkageEnabled: form.value.linkageEnabled,
 	 linkageDelay: form.value.linkageDelay,
@@ -758,6 +899,8 @@ function resetForm() {
     operationMode: 'once' as OperationMode,
     botIds: [], commentItems: [], operationSteps: [],
     preOperationSteps: [], postOperationSteps: [],
+    linkProductId: '', linkSearchPos: null, linkExplainPos: null, linkNumberPos: null,
+    linkNumber: '1', linkDelays: { ...DEFAULT_LINK_DELAYS } as LinkDelays,
     sendMode: 'sequential' as SendMode, commentCount: 0,
     commentInterval: 500, operationInterval: 1000,
     linkageEnabled: false, linkageDelay: 0, linkedTasks: [],
@@ -847,6 +990,10 @@ function handleClose() {
 .delay-label { font-size: 12px; color: var(--el-text-color-secondary); flex-shrink: 0; }
 .delay-input { width: 100px; flex-shrink: 0; }
 .delay-unit { font-size: 11px; color: var(--el-text-color-secondary); flex-shrink: 0; }
+.link-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.coord-input { width: 90px; flex-shrink: 0; }
+.coord-input :deep(.el-input__inner) { text-align: center; }
+.coord-empty { font-size: 13px; color: var(--el-text-color-placeholder); }
 .picker-filter-bar { display: flex; gap: 8px; margin-bottom: 12px; }
 .send-rules {
   display: flex;

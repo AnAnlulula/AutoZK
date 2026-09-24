@@ -170,28 +170,46 @@
           </template>
 
           <div class="card-body">
-            <div class="info-row">
-              <span class="info-label">水军数量</span>
-              <el-tag size="small">{{ card.bots.length }}</el-tag>
-            </div>
-            <div class="info-row">
-              <span class="info-label">发送顺序</span>
-              <el-tag size="small" :type="card.sendMode === 'sequential' ? 'info' : 'warning'">
-                {{ card.sendMode === 'sequential' ? '顺序' : '随机' }}
-              </el-tag>
-              <el-tag size="small" type="info" style="margin-left: 4px">
-                {{ (card.commentCount ?? 0) > 0 ? card.commentCount + '条' : '全部' }}
-              </el-tag>
-              <el-tag size="small" type="info" style="margin-left: 4px">
-                {{ (card.commentInterval ?? 500) }}ms
-              </el-tag>
-            </div>
-            <div class="info-row">
-              <span class="info-label">评论绑定</span>
-              <el-tag size="small" :type="card.commentItems?.length > 0 ? 'success' : 'info'">
-                {{ card.commentItems?.length ?? 0 }} 条
-              </el-tag>
-            </div>
+            <template v-if="(card.taskMode || 'comment') === 'link'">
+              <div class="info-row">
+                <span class="info-label">商品ID</span>
+                <el-tag size="small">{{ card.linkProductId || '未填写' }}</el-tag>
+              </div>
+              <div class="info-row">
+                <span class="info-label">修改链接号为</span>
+                <el-tag size="small" type="info">{{ card.linkNumber || '1' }}</el-tag>
+              </div>
+              <div class="info-row">
+                <span class="info-label">坐标</span>
+                <el-tag size="small" :type="linkCoordCount(card) === 3 ? 'success' : 'danger'">
+                  {{ linkCoordCount(card) }}/3 已配置
+                </el-tag>
+              </div>
+            </template>
+            <template v-else>
+              <div class="info-row">
+                <span class="info-label">水军数量</span>
+                <el-tag size="small">{{ card.bots.length }}</el-tag>
+              </div>
+              <div class="info-row">
+                <span class="info-label">发送顺序</span>
+                <el-tag size="small" :type="card.sendMode === 'sequential' ? 'info' : 'warning'">
+                  {{ card.sendMode === 'sequential' ? '顺序' : '随机' }}
+                </el-tag>
+                <el-tag size="small" type="info" style="margin-left: 4px">
+                  {{ (card.commentCount ?? 0) > 0 ? card.commentCount + '条' : '全部' }}
+                </el-tag>
+                <el-tag size="small" type="info" style="margin-left: 4px">
+                  {{ (card.commentInterval ?? 500) }}ms
+                </el-tag>
+              </div>
+              <div class="info-row">
+                <span class="info-label">评论绑定</span>
+                <el-tag size="small" :type="card.commentItems?.length > 0 ? 'success' : 'info'">
+                  {{ card.commentItems?.length ?? 0 }} 条
+                </el-tag>
+              </div>
+            </template>
             <div class="info-row">
               <span class="info-label">任务联动</span>
               <el-tag size="small" effect="plain" :type="card.linkageEnabled ? 'success' : 'danger'">
@@ -497,7 +515,12 @@ function onInterGroupDragEnd() {
 function modeLabel(mode: string): string {
   if (mode === 'mouse') return '操作鼠标'
   if (mode === 'mixed') return '混合操作'
+  if (mode === 'link') return '上链接'
   return '发评论'
+}
+
+function linkCoordCount(card: any): number {
+  return [card.linkSearchPos, card.linkExplainPos, card.linkNumberPos].filter(Boolean).length
 }
 
 function toggleGlobalDisable() {
@@ -583,6 +606,12 @@ function handleUpdate(data: any) {
     operationSteps: data.operationSteps,
     preOperationSteps: data.preOperationSteps,
     postOperationSteps: data.postOperationSteps,
+    linkProductId: data.linkProductId,
+    linkSearchPos: data.linkSearchPos,
+    linkExplainPos: data.linkExplainPos,
+    linkNumberPos: data.linkNumberPos,
+    linkNumber: data.linkNumber,
+    linkDelays: data.linkDelays,
     isDraft: data.isDraft,
     linkageEnabled: data.linkageEnabled,
     linkageDelay: data.linkageDelay,
@@ -1228,9 +1257,11 @@ async function confirmCopyTask() {
 .mode-comment { background: #fef3cd; color: #92660c; border: 1px solid #f5d88b; }
 .mode-mouse { background: #d4edda; color: #1a7a34; border: 1px solid #a3d9b1; }
 .mode-mixed { background: #fce4ec; color: #a93764; border: 1px solid #f5b6cd; }
+.mode-link { background: #d9ecff; color: #1a5fb4; border: 1px solid #a3c9f5; }
 .mode-text-comment { color: #92660c; }
 .mode-text-mouse { color: #1a7a34; }
 .mode-text-mixed { color: #a93764; }
+.mode-text-link { color: #1a5fb4; }
 .hotkey-tag {
   display: inline-flex;
   align-items: center;
