@@ -6,7 +6,7 @@
     :close-on-click-modal="false"
     @close="handleClose"
   >
-    <el-form label-width="100px" label-position="left">
+    <el-form label-width="120px" label-position="left">
       <!-- 1. 任务名称 -->
       <el-form-item label="任务名称" :required="!form.name.trim()">
  <el-input v-model="form.name" placeholder="输入任务名称" style="width: 300px" />
@@ -69,7 +69,7 @@
       <template v-if="form.taskMode === 'link'">
         <el-form-item label="商品ID" :required="!form.linkProductId.trim()">
           <div class="link-row">
-            <el-input v-model="form.linkProductId" placeholder="输入要搜索的商品ID" style="width: 240px" />
+            <el-input v-model="form.linkProductId" placeholder="输入要搜索的商品ID" style="width: 300px" />
             <span class="delay-label">延迟</span>
             <el-input-number v-model="form.linkDelays.productId" :min="0" :max="60000" :step="100" size="small" class="delay-input" />
             <span class="delay-unit">ms</span>
@@ -112,8 +112,8 @@
         </el-form-item>
       </template>
 
-      <!-- 混合操作：评论前操作 -->
-      <el-form-item v-if="form.taskMode === 'mixed'" label="评论前操作">
+      <!-- 混合操作：任务开始前操作 -->
+      <el-form-item v-if="form.taskMode === 'mixed'" label="任务开始前操作">
         <OperationStepList
           :steps="form.preOperationSteps"
           :capturing="isCapturing"
@@ -179,8 +179,8 @@
         </div>
       </el-form-item>
 
-      <!-- 混合操作：评论后操作 -->
-      <el-form-item v-if="form.taskMode === 'mixed'" label="评论后操作">
+      <!-- 混合操作：任务结束后操作 -->
+      <el-form-item v-if="form.taskMode === 'mixed'" label="任务结束后操作">
         <OperationStepList
           :steps="form.postOperationSteps"
           :capturing="isCapturing"
@@ -216,6 +216,7 @@
             <el-input-number v-model="form.commentInterval" :min="100" :max="60000" :step="100" style="width: 130px" />
             <span class="rule-hint">毫秒（按下回车后的延迟时间）</span>
           </div>
+          <NavResetRow :pos="form.navResetPos" :capturing="isCapturing" @capture="captureNavReset" />
         </div>
       </el-form-item>
 
@@ -229,6 +230,7 @@
             </el-radio-group>
             <span class="rule-hint">{{ form.operationMode === 'once' ? '按操作列表顺序依次点击坐标后结束' : '按操作列表顺序循环点击，再次按快捷键结束' }}</span>
           </div>
+          <NavResetRow :pos="form.navResetPos" :capturing="isCapturing" @capture="captureNavReset" />
         </div>
       </el-form-item>
 
@@ -239,8 +241,9 @@
             <span class="rule-label">批量设置延迟</span>
             <el-input-number v-model="batchLinkDelay" :min="0" :max="60000" :step="100" style="width: 130px" />
             <el-button size="small" @click="applyBatchLinkDelay">应用</el-button>
-            <span class="rule-hint">毫秒（一次性应用到上方所有步骤）</span>
+            <span class="rule-hint">毫秒</span>
           </div>
+          <NavResetRow :pos="form.navResetPos" :capturing="isCapturing" @capture="captureNavReset" />
         </div>
       </el-form-item>
 
@@ -374,6 +377,7 @@ import { useWorkflowStore } from '../stores/workflow'
 import { useGroupStore } from '../stores/groups'
 import ShortcutRecorder from './ShortcutRecorder.vue'
 import OperationStepList from './OperationStepList.vue'
+import NavResetRow from './NavResetRow.vue'
 import { DEFAULT_LINK_DELAYS } from '../../shared/types'
 import type { SendMode, BotInstance, TaskMode, OperationStep, OperationMode, LinkDelays, ScreenPoint } from '../../shared/types'
 
@@ -403,6 +407,7 @@ const emit = defineEmits<{
  linkNumberPos?: ScreenPoint | null
  linkNumber?: string
  linkDelays?: LinkDelays
+ navResetPos?: ScreenPoint | null
  isDraft?: boolean
  linkageEnabled: boolean
  linkageDelay: number
@@ -438,6 +443,7 @@ watch(() => props.visible, (val) => {
       linkNumberPos: props.editData.linkNumberPos ? { ...props.editData.linkNumberPos } : null,
       linkNumber: props.editData.linkNumber ?? '1',
       linkDelays: { ...DEFAULT_LINK_DELAYS, ...(props.editData.linkDelays || {}) },
+      navResetPos: props.editData.navResetPos ? { ...props.editData.navResetPos } : null,
       sendMode: props.editData.sendMode || 'sequential',
       commentCount: props.editData.commentCount ?? 0,
       commentInterval: props.editData.commentInterval ?? 500,
@@ -479,6 +485,7 @@ const form = ref({
   linkNumberPos: null as ScreenPoint | null,
   linkNumber: '1',
   linkDelays: { ...DEFAULT_LINK_DELAYS } as LinkDelays,
+  navResetPos: null as ScreenPoint | null,
   sendMode: 'sequential' as SendMode,
   commentCount: 0,
   commentInterval: 500,
@@ -664,7 +671,8 @@ function onDrop(idx: number) {
 
 // ===== 上链接坐标捕获 =====
 type LinkCoordKey = 'search' | 'explain' | 'numberPos'
-const linkCaptureKey = ref<LinkCoordKey | ''>('')
+type CapturePointKey = LinkCoordKey | 'navReset'
+const linkCaptureKey = ref<CapturePointKey | ''>('')
 
 const linkCoordFields: { key: LinkCoordKey; label: string }[] = [
   { key: 'search', label: '搜索框坐标' },
@@ -681,6 +689,14 @@ function getLinkPos(key: LinkCoordKey): ScreenPoint | null {
 function captureLinkPos(key: LinkCoordKey) {
   if (isCapturing.value) return
   linkCaptureKey.value = key
+  const fontSize = parseInt(document.documentElement.style.fontSize) || 14
+  isCapturing.value = true
+  window.electronAPI.openCaptureOverlay(fontSize)
+}
+
+function captureNavReset() {
+  if (isCapturing.value) return
+  linkCaptureKey.value = 'navReset'
   const fontSize = parseInt(document.documentElement.style.fontSize) || 14
   isCapturing.value = true
   window.electronAPI.openCaptureOverlay(fontSize)
@@ -714,7 +730,8 @@ function handleCaptureResult(result: { x: number; y: number } | null) {
     linkCaptureKey.value = ''
     if (!result) return
     const point = { x: result.x, y: result.y }
-    if (key === 'search') form.value.linkSearchPos = point
+    if (key === 'navReset') form.value.navResetPos = point
+    else if (key === 'search') form.value.linkSearchPos = point
     else if (key === 'explain') form.value.linkExplainPos = point
     else form.value.linkNumberPos = point
     return
@@ -850,6 +867,7 @@ function confirm() {
  linkNumberPos: form.value.linkNumberPos ? { ...form.value.linkNumberPos } : null,
  linkNumber: form.value.linkNumber.trim() || '1',
  linkDelays: { ...form.value.linkDelays },
+ navResetPos: form.value.navResetPos ? { ...form.value.navResetPos } : null,
  isDraft: false,
  linkageEnabled: form.value.linkageEnabled,
 	 linkageDelay: form.value.linkageDelay,
@@ -883,6 +901,7 @@ function saveDraft() {
  linkNumberPos: form.value.linkNumberPos ? { ...form.value.linkNumberPos } : null,
  linkNumber: form.value.linkNumber.trim() || '1',
  linkDelays: { ...form.value.linkDelays },
+ navResetPos: form.value.navResetPos ? { ...form.value.navResetPos } : null,
  isDraft: true,
 	 linkageEnabled: form.value.linkageEnabled,
 	 linkageDelay: form.value.linkageDelay,
@@ -901,6 +920,7 @@ function resetForm() {
     preOperationSteps: [], postOperationSteps: [],
     linkProductId: '', linkSearchPos: null, linkExplainPos: null, linkNumberPos: null,
     linkNumber: '1', linkDelays: { ...DEFAULT_LINK_DELAYS } as LinkDelays,
+    navResetPos: null,
     sendMode: 'sequential' as SendMode, commentCount: 0,
     commentInterval: 500, operationInterval: 1000,
     linkageEnabled: false, linkageDelay: 0, linkedTasks: [],
@@ -993,7 +1013,16 @@ function handleClose() {
 .link-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .coord-input { width: 90px; flex-shrink: 0; }
 .coord-input :deep(.el-input__inner) { text-align: center; }
-.coord-empty { font-size: 13px; color: var(--el-text-color-placeholder); }
+.coord-empty {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 188px;
+  height: 24px;
+  font-size: 12px;
+  color: var(--el-text-color-placeholder);
+  flex-shrink: 0;
+}
 .picker-filter-bar { display: flex; gap: 8px; margin-bottom: 12px; }
 .send-rules {
   display: flex;

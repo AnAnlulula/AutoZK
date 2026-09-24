@@ -45,6 +45,9 @@ export class TaskExecutor {
     robot.keyToggle('shift', 'up')
     await this.sleep(200)
 
+    // 任务开始前：点击导航栏重置坐标
+    await this.execNavReset(task, robot)
+
     if (taskMode === 'mouse') {
       await this.runMouseMode(taskId, task, robot)
     } else if (taskMode === 'mixed') {
@@ -57,10 +60,22 @@ export class TaskExecutor {
 
     // 仅当任务未被手动停止时才视为正常结束，触发结束回调（含联动）
     if (this.runningTasks.get(taskId)) {
+      // 任务结束后：再次点击导航栏重置坐标
+      await this.execNavReset(task, robot)
       this.runningTasks.set(taskId, false)
       this.notify('ended', taskId, task.name)
       this.onEndCallback?.(taskId)
     }
+  }
+
+  // 导航栏重置：点击配置的坐标（任务开始前后各调用一次）
+  private async execNavReset(task: any, robot: any) {
+    const pos = task.navResetPos
+    if (!pos) return
+    robot.moveMouse(pos.x, pos.y)
+    await this.sleep(100)
+    robot.mouseClick('left')
+    await this.sleep(300)
   }
 
   private async runCommentMode(taskId: string, task: any, robot: any) {
@@ -177,7 +192,7 @@ export class TaskExecutor {
 
     await this.sleep(500)
 
-    // 1. 执行评论前操作
+    // 1. 执行任务开始前操作
     if (preSteps.length > 0) {
       await this.execSteps(taskId, preSteps, task.operationInterval || 1000, robot)
     }
@@ -188,7 +203,7 @@ export class TaskExecutor {
       await this.sendComments(taskId, commentsToSend, bots, commentInterval, robot)
     }
 
-    // 3. 执行评论后操作
+    // 3. 执行任务结束后操作
     if (postSteps.length > 0) {
       await this.execSteps(taskId, postSteps, task.operationInterval || 1000, robot)
     }

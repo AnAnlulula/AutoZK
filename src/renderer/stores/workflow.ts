@@ -48,6 +48,7 @@ export const useWorkflowStore = defineStore('workflow', () => {
     linkNumberPos?: ScreenPoint | null
     linkNumber?: string
     linkDelays?: LinkDelays
+    navResetPos?: ScreenPoint | null
     linkageEnabled: boolean
     linkageDelay: number
     linkedTasks: { taskId: string; taskName: string; delay: number }[]
@@ -81,6 +82,7 @@ export const useWorkflowStore = defineStore('workflow', () => {
  linkNumberPos: data.linkNumberPos,
  linkNumber: data.linkNumber,
  linkDelays: data.linkDelays,
+ navResetPos: data.navResetPos,
  isDraft: data.isDraft,
   linkageEnabled: data.linkageEnabled,
   linkageDelay: data.linkageDelay,

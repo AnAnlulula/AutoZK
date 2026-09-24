@@ -612,6 +612,7 @@ function handleUpdate(data: any) {
     linkNumberPos: data.linkNumberPos,
     linkNumber: data.linkNumber,
     linkDelays: data.linkDelays,
+    navResetPos: data.navResetPos,
     isDraft: data.isDraft,
     linkageEnabled: data.linkageEnabled,
     linkageDelay: data.linkageDelay,

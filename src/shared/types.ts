@@ -132,8 +132,9 @@ export interface BotCard {
   commentIds: string[]        // 绑定的评论 ID 列表（有序）
   commentItems: { key: string; content: string; source: 'manual' | 'table'; mustSend: boolean; delay: number }[]
   operationSteps: OperationStep[]  // 操作步骤列表（鼠标模式）
-  preOperationSteps: OperationStep[]   // 评论前操作（混合模式）
-  postOperationSteps: OperationStep[]  // 评论后操作（混合模式）
+  preOperationSteps: OperationStep[]   // 任务开始前操作（混合模式）
+  postOperationSteps: OperationStep[]  // 任务结束后操作（混合模式）
+  navResetPos?: ScreenPoint | null  // 导航栏重置坐标（任务开始前后各点击一次）
   linkProductId?: string          // 上链接：商品ID
   linkSearchPos?: ScreenPoint | null    // 上链接：搜索框坐标
   linkExplainPos?: ScreenPoint | null   // 上链接：讲解位置坐标
