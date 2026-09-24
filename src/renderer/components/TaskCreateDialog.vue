@@ -68,12 +68,7 @@
       <!-- 5B. 上链接模块 -->
       <template v-if="form.taskMode === 'link'">
         <el-form-item label="商品ID" :required="!form.linkProductId.trim()">
-          <div class="link-row">
-            <el-input v-model="form.linkProductId" placeholder="输入要搜索的商品ID" style="width: 300px" />
-            <span class="delay-label">延迟</span>
-            <el-input-number v-model="form.linkDelays.productId" :min="0" :max="60000" :step="100" size="small" class="delay-input" />
-            <span class="delay-unit">ms</span>
-          </div>
+          <el-input v-model="form.linkProductId" placeholder="输入要搜索的商品ID" style="width: 300px" />
         </el-form-item>
 
         <el-form-item
@@ -91,10 +86,13 @@
               </el-button>
             </template>
             <template v-else>
-              <span class="coord-empty">未捕获</span>
-              <el-button size="small" :disabled="isCapturing" @click="captureLinkPos(f.key)">
-                {{ isCapturing ? '捕获中...' : '捕获坐标' }}
-              </el-button>
+              <el-input
+                readonly
+                size="small"
+                class="coord-capture-input"
+                :model-value="isCapturing ? '捕获中...' : '点击以捕获坐标'"
+                @click="captureLinkPos(f.key)"
+              />
             </template>
             <span class="delay-label">延迟</span>
             <el-input-number v-model="form.linkDelays[f.key]" :min="0" :max="60000" :step="100" size="small" class="delay-input" />
@@ -112,8 +110,8 @@
         </el-form-item>
       </template>
 
-      <!-- 混合操作：任务开始前操作 -->
-      <el-form-item v-if="form.taskMode === 'mixed'" label="任务开始前操作">
+      <!-- 混合操作 / 上链接：任务开始前操作 -->
+      <el-form-item v-if="form.taskMode === 'mixed' || form.taskMode === 'link'" label="任务开始前操作">
         <OperationStepList
           :steps="form.preOperationSteps"
           :capturing="isCapturing"
@@ -179,8 +177,8 @@
         </div>
       </el-form-item>
 
-      <!-- 混合操作：任务结束后操作 -->
-      <el-form-item v-if="form.taskMode === 'mixed'" label="任务结束后操作">
+      <!-- 混合操作 / 上链接：任务结束后操作 -->
+      <el-form-item v-if="form.taskMode === 'mixed' || form.taskMode === 'link'" label="任务结束后操作">
         <OperationStepList
           :steps="form.postOperationSteps"
           :capturing="isCapturing"
@@ -706,7 +704,6 @@ const batchLinkDelay = ref(0)
 
 function applyBatchLinkDelay() {
   const d = form.value.linkDelays
-  d.productId = batchLinkDelay.value
   d.search = batchLinkDelay.value
   d.explain = batchLinkDelay.value
   d.numberPos = batchLinkDelay.value
@@ -1013,15 +1010,12 @@ function handleClose() {
 .link-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .coord-input { width: 90px; flex-shrink: 0; }
 .coord-input :deep(.el-input__inner) { text-align: center; }
-.coord-empty {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 188px;
-  height: 24px;
+.coord-capture-input { width: 188px; flex-shrink: 0; cursor: pointer; }
+.coord-capture-input :deep(.el-input__inner) {
+  cursor: pointer;
   font-size: 12px;
+  text-align: center;
   color: var(--el-text-color-placeholder);
-  flex-shrink: 0;
 }
 .picker-filter-bar { display: flex; gap: 8px; margin-bottom: 12px; }
 .send-rules {
@@ -1038,7 +1032,7 @@ function handleClose() {
 .rule-label {
   font-size: 13px;
   color: var(--el-text-color-secondary);
-  width: 64px;
+  width: 96px;
   flex-shrink: 0;
 }
 .rule-hint {

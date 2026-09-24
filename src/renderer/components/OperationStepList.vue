@@ -3,7 +3,7 @@
     <div class="capture-row">
       <el-button type="primary" size="small" :disabled="capturing" @click="emit('capture')">
         <el-icon><Aim /></el-icon>
-        {{ capturing ? '捕获中...' : '捕获' }}
+        {{ capturing ? '捕获中...' : '添加点击操作' }}
       </el-button>
       <template v-if="steps.length > 0">
         <span class="batch-label">批量设置延迟</span>
@@ -42,7 +42,6 @@
         </el-button>
       </div>
     </div>
-    <el-empty v-else description="暂无操作步骤，点击上方捕获按钮添加" :image-size="40" />
   </div>
 </template>
 

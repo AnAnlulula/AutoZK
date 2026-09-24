@@ -9,10 +9,13 @@
       </el-button>
     </template>
     <template v-else>
-      <span class="coord-empty">未捕获</span>
-      <el-button size="small" :disabled="capturing" @click="emit('capture')">
-        {{ capturing ? '捕获中...' : '捕获坐标' }}
-      </el-button>
+      <el-input
+        readonly
+        size="small"
+        class="coord-capture-input"
+        :model-value="capturing ? '捕获中...' : '点击以捕获坐标'"
+        @click="emit('capture')"
+      />
     </template>
     <span class="nav-reset-hint">建议获取底部导航栏空白处哦~</span>
   </div>
@@ -36,20 +39,17 @@ const emit = defineEmits<{
 .rule-label {
   font-size: 13px;
   color: var(--el-text-color-secondary);
-  width: 64px;
+  width: 96px;
   flex-shrink: 0;
 }
 .coord-input { width: 90px; flex-shrink: 0; }
 .coord-input :deep(.el-input__inner) { text-align: center; }
-.coord-empty {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 188px;
-  height: 24px;
+.coord-capture-input { width: 188px; flex-shrink: 0; cursor: pointer; }
+.coord-capture-input :deep(.el-input__inner) {
+  cursor: pointer;
   font-size: 12px;
+  text-align: center;
   color: var(--el-text-color-placeholder);
-  flex-shrink: 0;
 }
-.nav-reset-hint { font-size: 11px; color: var(--el-text-color-secondary); flex-shrink: 0; }
+.nav-reset-hint { font-size: 11px; color: var(--el-color-warning); flex-shrink: 0; }
 </style>

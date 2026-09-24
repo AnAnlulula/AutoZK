@@ -57,7 +57,6 @@ export interface ScreenPoint {
 
 // ===== 上链接模式：各步骤延迟(ms) =====
 export interface LinkDelays {
-  productId: number      // 写入商品ID剪贴板后
   search: number         // 点击搜索框并回车搜索后
   explain: number        // 点击讲解位置后
   numberPos: number      // 点击链接号后
@@ -65,7 +64,6 @@ export interface LinkDelays {
 }
 
 export const DEFAULT_LINK_DELAYS: LinkDelays = {
-  productId: 200,
   search: 500,
   explain: 300,
   numberPos: 300,
