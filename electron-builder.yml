@@ -1,0 +1,23 @@
+appId: com.autozk.app
+productName: AutoZK
+directories:
+  output: release
+  buildResources: resources
+files:
+  - dist/**/*
+  - package.json
+win:
+  target:
+    - nsis
+  artifactName: ${name}-${version}-setup.${ext}
+mac:
+  target:
+    - dmg
+  artifactName: ${name}-${version}.${ext}
+linux:
+  target:
+    - AppImage
+  artifactName: ${name}-${version}.${ext}
+nsis:
+  oneClick: false
+  allowToChangeInstallationDirectory: true
